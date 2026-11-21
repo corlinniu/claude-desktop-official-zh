@@ -201,7 +201,7 @@ def main() -> int:
 
     if args.restore_if_backup_exists:
         if not core.find_app_backups(args.app):
-            print(f"未找到备份 {args.app.parent}: {core.BACKUP_GLOB}，跳过安装前还原。")
+            print(f"未找到备份 {core.BACKUP_DIR}: {core.BACKUP_GLOB}，跳过安装前还原。")
             return 0
         if not core.preinstall_should_restore(args.app):
             print(f"当前 app 是官方签名（{core.bundle_version(args.app)}），跳过安装前还原。")

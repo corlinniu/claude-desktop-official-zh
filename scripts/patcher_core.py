@@ -25,6 +25,9 @@ from typing import Any
 
 APP_DEFAULT = Path("/Applications/Claude.app")
 
+# 备份不再与 Claude.app 同目录（/Applications），统一放到工作目录（项目根目录）下的 backups/。
+BACKUP_DIR = Path(__file__).resolve().parent.parent / "backups"
+
 BACKUP_GLOB = "Claude.backup-before-zh-CN-*.app"
 
 APP_ASAR_REL = Path("Contents/Resources/app.asar")
@@ -672,12 +675,13 @@ def set_user_locale(user_home: Path, lang_code: str) -> None:
 def backup_and_replace(original: Path, patched: Path, dry_run: bool) -> Path:
     start = time.perf_counter()
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-    backup = original.with_name(f"Claude.backup-before-zh-CN-{stamp}.app")
+    backup = BACKUP_DIR / f"Claude.backup-before-zh-CN-{stamp}.app"
     if dry_run:
         print(f"[dry-run] Would move {original} -> {backup}")
         print(f"[dry-run] Would move {patched} -> {original}")
         return backup
 
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
     log(f"Backing up current app: {backup}")
     shutil.move(str(original), str(backup))
     log(f"Installing patched app: {original}")
@@ -692,7 +696,10 @@ def remove_path(path: Path) -> None:
         path.unlink()
 
 def find_app_backups(app: Path) -> list[Path]:
-    return sorted(path for path in app.parent.glob(BACKUP_GLOB) if path.is_dir())
+    """List backups from the workspace backups/ dir (app kept for call-site compatibility)."""
+    if not BACKUP_DIR.is_dir():
+        return []
+    return sorted(path for path in BACKUP_DIR.glob(BACKUP_GLOB) if path.is_dir())
 
 def bundle_version(app: Path) -> str:
     """Return the app bundle version, or "0" when it cannot be read."""
@@ -764,7 +771,7 @@ def prune_stale_backups(app: Path, keep: Path, dry_run: bool) -> None:
 def restore_backup(app: Path, dry_run: bool) -> Path:
     backups = find_app_backups(app)
     if not backups:
-        raise SystemExit(f"No Claude backup found in {app.parent}: {BACKUP_GLOB}")
+        raise SystemExit(f"No Claude backup found in {BACKUP_DIR}: {BACKUP_GLOB}")
 
     backup = select_backup(backups)
     extra_backups = [path for path in backups if path != backup]

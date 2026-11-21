@@ -11,4 +11,9 @@ venv/
 .reasonix/
 runtime/
 scripts/experimental/runtime/
+backups/
 *.embed-*.zip
+/.workbuddy/
+/.claude/
+/.chatgpt/
+/.codex/
